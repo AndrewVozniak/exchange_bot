@@ -191,8 +191,8 @@ def purchaseScreen(call):
         if call.data == "support":
             bot.send_message(call.message.chat.id, f"Для изменения напиши !support-( Значение )")
 
-        if call.data == "bonus":
-            bot.send_message(call.message.chat.id, f"Для изменения напиши !bonus-( Значение )")
+        if call.data == "rules":
+            bot.send_message(call.message.chat.id, f"Для изменения напиши !rules-( Значение )")
 
         if call.data == "description":
             bot.send_message(call.message.chat.id, f"Для изменения напиши !description-( Значение )")

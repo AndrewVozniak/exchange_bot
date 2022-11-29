@@ -5,13 +5,14 @@ import random
 import time
 import handlers.config as cfg
 from telebot import *
-import handlers.btcPrice as btc
+import handlers.database as db
 import handlers.validation as valid
 
 token = cfg.BOT_TOKEN
 bot = telebot.TeleBot(token)
 
-summary = 0
+database = db.connect("localhost","root", "root", "exchange_bot")
+cursor = database.cursor()
 
 # * START KEYBOARD
 startKeyboard = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -54,51 +55,72 @@ def checkCommand(message, start_msg):
         startMSG(message)
         return False
 
-    if message.text == "⬇️ Список криптовалют": # TODO 
+    if message.text == "⬇️ Список криптовалют ⬇️": # TODO 
         keyboard = telebot.types.InlineKeyboardMarkup(row_width=1)
 
         # добавляем выбор валюты
-        rub = types.InlineKeyboardButton('Ввести сумму в рублях', callback_data='buyBTC_RUB')
-        btc = types.InlineKeyboardButton('Ввести количество BTC', callback_data='buyBTC_BTC')
+        cryptos = [types.InlineKeyboardButton(i, callback_data=f"coin-{i}") for i in cfg.CRYPTO_LIST.keys()]
 
-        keyboard.add(btc, rub)
+        keyboard.add(*cryptos)
 
-        bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"⬇️ Купить BTC")
+        bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"⬇️ Выбрать валюту")
 
-        bot.send_message(message.chat.id, reply_markup=keyboard, text=f"""🔄 Курс обмена: {cfg.BTC_BUY_PRICE} → 1 BTC
-💵 Минимальная сумма: {cfg.MIN_SUM_BTC} BTC
-💵 Максимальная сумма: {cfg.MAX_SUM_BTC} BTC""")
+        bot.send_message(message.chat.id, reply_markup=keyboard, text=f"""💰 Актуальные цены
+
+BTC -> {cfg.BTC_PRICE}
+XRP -> {cfg.XRP_PRICE}
+TRX -> {cfg.TRX_PRICE}
+APT -> {cfg.APT_PRICE}
+ETH -> {cfg.ETH_PRICE}
+MATIC -> {cfg.MATIC_PRICE}
+DOGE -> {cfg.DOGE_PRICE}
+LTC -> {cfg.LTC_PRICE}
+TWT -> {cfg.TWT_PRICE}
+BNB -> {cfg.BNB_PRICE}
 
 
-    elif message.text == "💰 Актуальные цены": # TODO 
-        keyboard = telebot.types.InlineKeyboardMarkup(row_width=1)
+🔄 Курс обмена в USD 🔄
+""")
 
-        # добавляем выбор валюты
-        rub = types.InlineKeyboardButton('Продать в рублях', callback_data='sellBTC_RUB')
-        btc = types.InlineKeyboardButton('Продать в BTC', callback_data='sellBTC_BTC')
 
-        keyboard.add(btc, rub)
+    elif message.text == "💰 Актуальные цены": 
+        bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""💰 Актуальные цены
 
-        bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"⬆️ Продать BTC")
+BTC -> {cfg.BTC_PRICE}
+XRP -> {cfg.XRP_PRICE}
+TRX -> {cfg.TRX_PRICE}
+APT -> {cfg.APT_PRICE}
+ETH -> {cfg.ETH_PRICE}
+MATIC -> {cfg.MATIC_PRICE}
+DOGE -> {cfg.DOGE_PRICE}
+LTC -> {cfg.LTC_PRICE}
+TWT -> {cfg.TWT_PRICE}
+BNB -> {cfg.BNB_PRICE}
 
-        bot.send_message(message.chat.id, reply_markup=keyboard, text=f"""🔄 Курс обмена: {cfg.BTC_SELL_PRICE} → 1 BTC
-💵 Минимальная сумма: {cfg.MIN_SUM_BTC} BTC
-💵 Максимальная сумма: {cfg.MAX_SUM_BTC} BTC""")
+
+🔄 Курс обмена в USD 🔄
+""")
 
 
     elif message.text == "🔄 История операций":
-        bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""🔄 История обменов
+        cursor.execute(f"SELECT * FROM operations WHERE user_id = {message.chat.id}")
 
-[Список обменов пуст]""")
+        operations = cursor.fetchall()
 
-        # TODO ФУНКЦІОНАЛ ВИВЕДЕННЯ ІСТОРІЇ
+        bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""🔄 История обменов""")
+        for x in operations:
+            bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""`Номер:` {x[0]};
+`Тип:` {x[1]};
+`Монета:` {x[2]};
+`Средство вывода:` {x[3]};
+`Сумма:` {x[4]} USD;
+""", parse_mode="Markdown")
+
+
+        
 
     elif message.text == "🎁 Правила обмена":
         bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""{cfg.RULES}""")
-
-
-    elif message.text == "💰 Актуальные цены":         # TODO 
-        bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""{cfg.DESCRIPTION}""")
 
     elif message.text == "📖 Поддержка":
         bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""📖 Поддержка
@@ -117,231 +139,135 @@ def checkCommand(message, start_msg):
 
 
 
+@bot.callback_query_handler(func=lambda call: True)
+def callback_inline(call):
+    global cancelKeyboard
+    keyboard = telebot.types.InlineKeyboardMarkup(row_width=1)
+
+
+    if call.data.startswith('coin-'):
+        crypto = call.data.partition('-')[2]
+        # добавляем выбор действия
+        buy = types.InlineKeyboardButton(f'Купить {crypto}', callback_data=f'buy-{crypto}')
+        sell = types.InlineKeyboardButton(f'Продать {crypto}', callback_data=f'sell-{crypto}')
+        
+        keyboard.add(buy, sell)
+
+        bot.send_message(call.message.chat.id, reply_markup=keyboard, text="💬 Выберите действие:")
+
+    if call.data.startswith('buy-'):
+        crypto = call.data.partition('-')[2]
+
+        bot.send_message(call.message.chat.id, reply_markup=cancelKeyboard, text="💬 Введите номер своего крипто-кошелька:")
+        bot.register_next_step_handler(call.message, getAmount, crypto, "BUY")
+
+    if call.data.startswith('sell-'):
+        crypto = call.data.partition('-')[2]
+
+        bot.send_message(call.message.chat.id, reply_markup=cancelKeyboard, text="💬 Введите номер своей карты:")
+        bot.register_next_step_handler(call.message, getAmount, crypto, "SELL")
+
+
+def getAmount(message, crypto, action):
+    wallet = message.text
+
+    bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""💬 Укажите количество {crypto}""")
+
+    if action == "BUY":
+        bot.register_next_step_handler(message, checkPayInfo, crypto, "BUY", wallet)
+        
+    elif action == "SELL":
+        bot.register_next_step_handler(message, checkPayInfo, crypto, "SELL", wallet)
+
+
+def checkPayInfo(message, crypto, action, wallet):
+    global cursor
+
+    amount = float(message.text)
+
+    if valid.validateBTC(wallet) or valid.validateCard(wallet):
+        payStady(message, amount, crypto, action, wallet)
+    else:
+        bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""⚠️ Такого кошелька / карты не существует! Оформите заявку по новой.""")
+        startMSG(message)
+        return False
 
 
 
 
-
-
-
-
-def exchangeCryptoStady(message, currency, action, updating):
+def payStady(message, amount, crypto, action, wallet):
     if checkCancel(message):
         startMSG(message)
         return False
 
-    if action == "BUY":
-        if currency == "BTC":
-            if valid.checkSum(cfg.MIN_SUM_BTC, cfg.MAX_SUM_BTC, message.text) or updating:
-                bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""💬 Укажите Ваш адрес BTC для зачисления""")
-                bot.register_next_step_handler(message, checkPayInfoStady, message.text, "BTC", "BUY")
+    
+            
+    keyboard = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    keyboard.row("✅ Оплата отправлена","🚫 Отменить")
 
-            else:
-                bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""Минимальная сумма для обмена {cfg.MIN_SUM_BTC} btc
-Максимальная сумма для обмена {cfg.MAX_SUM_BTC} btc""")
-                bot.register_next_step_handler(message, exchangeCryptoStady, currency, "BUY", False)
+    # ? ПОЛУЧАЕМ КОМИСИЮ КРИПТЫ И ДОБАВЛЯЕМ ЕЕ К AMOUNT
+    db.execute(cursor, f"SELECT commission FROM coins WHERE name = '{crypto}'")
+    commission = cursor.fetchone()
+    
+    paymentSum = cfg.CRYPTO_LIST[crypto]*amount
+
+    if action == "SELL":
+        price = amount
+        if(commission[0] > 1):
+            price = amount*commission[0]
+
+        bot.send_message(message.chat.id, reply_markup=keyboard, text=f"""✅ Заявка {str(random.randrange(100, 40000)).zfill(6)} успешно создана!
+
+    💵 Сумма к получению: {paymentSum} USD
+    🏦 Счёт зачисления:
+    {wallet}
+
+    ⏺️ Статус заявки:  🟡 Ожидает оплаты
+
+    🕓 Время на оплату:  30 минут
+    💵 Сумма к оплате: {price} {crypto}
+    🏦 Реквизиты для оплаты: `{cfg.CARD_NUMBER}`""", parse_mode="Markdown")
+        
 
 
-        if currency == "RUB":
-            if valid.checkSum(cfg.MIN_SUM_RUB, cfg.MAX_SUM_RUB, message.text) or updating:
-                bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""💬 Укажите Ваш адрес BTC для зачисления""")
-                bot.register_next_step_handler(message, checkPayInfoStady, message.text, "RUB", "BUY")
+    elif action == "BUY":
+        price = paymentSum
+        if(commission[0] > 1):
+            price = paymentSum*commission[0]
+            
+        bot.send_message(message.chat.id, reply_markup=keyboard, text=f"""✅ Заявка {str(random.randrange(100, 40000)).zfill(6)} успешно создана!
 
-            else:
-                bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""Минимальная сумма для обмена {cfg.MIN_SUM_RUB} руб
-Максимальная сумма для обмена {cfg.MAX_SUM_RUB} руб""")
-                bot.register_next_step_handler(message, exchangeCryptoStady, currency, "BUY", False)
+    💵 Сумма к получению: {amount} {crypto}
+    🏦 Счёт зачисления:
+    {wallet}
+
+    ⏺️ Статус заявки:  🟡 Ожидает оплаты
+
+    🕓 Время на оплату:  30 минут
+    💵 Сумма к оплате: `{price}` USD
+    🏦 Реквизиты для оплаты: `{cfg.CARD_NUMBER}`""", parse_mode="Markdown")
+
+    bot.register_next_step_handler(message, checkPayment, action, crypto, wallet, price, message.chat.id)
+
+
+
+
+def checkPayment(message, type, coin, wallet, price, user_id):
+    global cursor
+
+    if checkCancel(message):
+        startMSG(message)
+        return False
+
+    if message.text == "✅ Оплата отправлена":
+        #? СОХРАНЯЕМ ТРАНЗАКЦИЮ
+        sql = f"INSERT INTO `operations` (`id`, `type`, `coin`, `wallet_number`, `amount`, `user_id`) VALUES (NULL, '{type}', '{coin}', '{wallet}', '{price}', '{user_id}');"
+        cursor.execute(sql)
+
+        database.commit()
     
 
 
-
-    if action == "SELL":
-        if currency == "BTC":
-            if valid.checkSum(cfg.MIN_SUM_BTC, cfg.MAX_SUM_BTC, message.text) or updating:
-                bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""💬 Укажите номер карты для зачисления""")
-                bot.register_next_step_handler(message, checkPayInfoStady, message.text, "BTC", "SELL")
-
-            else:
-                bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""Минимальная сумма для обмена {cfg.MIN_SUM_BTC} btc
-Максимальная сумма для обмена {cfg.MAX_SUM_BTC} btc""")
-                bot.register_next_step_handler(message, exchangeCryptoStady, currency, "SELL", False)
-
-
-        if currency == "RUB":
-            if valid.checkSum(cfg.MIN_SUM_RUB, cfg.MAX_SUM_RUB, message.text) or updating:
-                bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""💬 Укажите номер карты для зачисления""")
-                bot.register_next_step_handler(message, checkPayInfoStady, message.text, "RUB", "SELL")
-
-            else:
-                bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""Минимальная сумма для обмена {cfg.MIN_SUM_RUB} руб
-Максимальная сумма для обмена {cfg.MAX_SUM_RUB} руб""")
-                bot.register_next_step_handler(message, exchangeCryptoStady, currency, "SELL", False)
-
-
-
-
-
-
-
-
-def checkPayInfoStady(message, summ, currency, action):
-    print("checkPayInfoStady")
-    if checkCancel(message):
-        startMSG(message)
-        return False
-
-    global summary
-    # в душе не ебу как работает ( разбирайся сам )
-    try:
-        if summary == 0:
-            summary = float(summ)
-    except:
-        exchangeCryptoStady(message, currency, "BUY", True)
-        
-
-    if action == "BUY":
-        print(currency)
-        if valid.validateBTC(message.text):
-            if currency == "RUB":
-                print(f"{currency} next - pay stady")
-                payStady(message, summary, "RUB", "BUY")
-            if currency == "BTC":
-                print(f"{currency} next - pay stady")
-                payStady(message, summary, "BTC", "BUY")
-        
-        else:            
-            bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""⚠️ Такого BTC кошелька не существует!""")
-            exchangeCryptoStady(message, currency, "BUY", True)
-
-    if action == "SELL":
-        print(currency)
-        if valid.validateCard(message.text):
-            if currency == "RUB":
-                print(f"{currency} next - pay stady")
-                payStady(message, summary, "RUB", "SELL")
-            if currency == "BTC":
-                print(f"{currency} next - pay stady")
-                payStady(message, summary, "BTC", "SELL")
-
-        else:
-            bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""⚠️ Неверно введен номер карты!""")
-            exchangeCryptoStady(message, currency, "SELL", True)
-
-
-
-
-
-
-
-
-def payStady(message, summ, currency, action):
-    if checkCancel(message):
-        startMSG(message)
-        return False
-
-    global summary
-    #! BUY BTC
-    if valid.validateBTC(message.text) and currency == "BTC" and action == "BUY":        
-        keyboard = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        keyboard.row("✅ Оплата отправлена","🚫 Отменить")
-
-        bot.send_message(message.chat.id, reply_markup=keyboard, text=f"""✅ Заявка {str(random.randrange(100, 40000)).zfill(6)} успешно создана!
-
-💵 Сумма к получению: {summ} Btc
-🏦 Счёт зачисления:
-{message.text}
-
-⏺️ Статус заявки:  🟡 Ожидает оплаты
-
-🕓 Время на оплату:  30 минут
-💵 Сумма к оплате: `{btc.buyBTC_inBTC(summ)}` Руб
-🏦 Реквизиты для оплаты: `{cfg.CARD_NUMBER}`""", parse_mode="Markdown")
-
-
-    elif valid.validateCard(message.text) and currency == "RUB" and action == "BUY":        
-        keyboard = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        keyboard.row("✅ Оплата отправлена","🚫 Отменить")
-
-        bot.send_message(message.chat.id, reply_markup=keyboard, text=f"""✅ Заявка {str(random.randrange(100, 40000)).zfill(6)} успешно создана!
-
-💵 Сумма к получению: {btc.buyBTC_inRUB(summ)} Btc
-🏦 Счёт зачисления:
-{message.text}
-
-⏺️ Статус заявки:  🟡 Ожидает оплаты
-
-🕓 Время на оплату:  30 минут
-💵 Сумма к оплате: `{summ}` Руб
-🏦 Реквизиты для оплаты: `{cfg.CARD_NUMBER}`""", parse_mode="Markdown")
-
-    #! SELL BTC
-    elif valid.validateBTC(message.text) and currency == "BTC" and action == "SELL":        
-        keyboard = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        keyboard.row("✅ Оплата отправлена","🚫 Отменить")
-
-        bot.send_message(message.chat.id, reply_markup=keyboard, text=f"""✅ Заявка {str(random.randrange(100, 40000)).zfill(6)} успешно создана!
-
-💵 Сумма к получению: {summ} Btc
-🏦 Счёт зачисления:
-{message.text}
-
-⏺️ Статус заявки:  🟡 Ожидает оплаты
-
-🕓 Время на оплату:  30 минут
-💵 Сумма к оплате: {btc.buyBTC_inBTC(summ)} Руб
-🏦 Реквизиты для оплаты: {cfg.CARD_NUMBER}""")
-
-
-    elif valid.validateCard(message.text) and currency == "RUB" and action == "SELL":        
-        keyboard = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        keyboard.row("✅ Оплата отправлена","🚫 Отменить")
-
-        bot.send_message(message.chat.id, reply_markup=keyboard, text=f"""✅ Заявка {str(random.randrange(100, 40000)).zfill(6)} успешно создана!
-
-💵 Сумма к получению: {summ} Btc
-🏦 Счёт зачисления:
-{message.text}
-
-⏺️ Статус заявки:  🟡 Ожидает оплаты
-
-🕓 Время на оплату:  30 минут
-💵 Сумма к оплате: {btc.buyBTC_inBTC(summ)} Руб
-🏦 Реквизиты для оплаты: {cfg.CARD_NUMBER}""")
-
-
-    else:
-        keyboard = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        keyboard.row("✅ Оплата отправлена","🚫 Отменить")
-
-        bot.send_message(message.chat.id, reply_markup=keyboard, text=f"""✅ Заявка {str(random.randrange(100, 40000)).zfill(6)} успешно создана!
-
-💵 Сумма к получению: {summ} Btc
-🏦 Счёт зачисления:
-{message.text}
-
-⏺️ Статус заявки:  🟡 Ожидает оплаты
-
-🕓 Время на оплату:  30 минут
-💵 Сумма к оплате: {btc.buyBTC_inBTC(summ)} Руб
-🏦 Реквизиты для оплаты: {cfg.CARD_NUMBER}""")
-
-        print(valid.validateCard(message.text))
-        print(currency)
-        print(action)
-
-    summary = 0
-    bot.register_next_step_handler(message, checkPayment)
-
-
-
-
-def checkPayment(message):
-    if checkCancel(message):
-        startMSG(message)
-
-        return False
-    if message.text == "✅ Оплата отправлена":
-        print("F")
         keyboard = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         keyboard.row("✅ Оплата отправлена","🚫 Отменить")
 
@@ -351,54 +277,16 @@ def checkPayment(message):
         time.sleep(0.8)
         bot.delete_message(message.chat.id, message_id=message.message_id + 1)
         bot.send_message(chat_id=message.chat.id, reply_markup=keyboard, text=f"""*❌ Оплата не обнаружена. Повторите проверку через 5 минут!*""", parse_mode="Markdown")
-        bot.register_next_step_handler(message, checkPayment)
+        bot.register_next_step_handler(message, checkPayment, type, coin, wallet, price, user_id)
 
     else:
         keyboard = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         keyboard.row("✅ Оплата отправлена","🚫 Отменить")
 
         bot.send_message(message.chat.id, reply_markup=keyboard, text=f"""⭕️ Воспользуйтесь клавиатурой!""") 
-        bot.register_next_step_handler(message, checkPayment)
+        bot.register_next_step_handler(message, checkPayment, type, coin, wallet, price, user_id)
 
 
-@bot.callback_query_handler(func=lambda call: True)
-def callback_inline(call):
-    if call.message:
-        if call.data == ('buyBTC_BTC'):
-            bot.send_message(call.message.chat.id, reply_markup=cancelKeyboard, text=f"""Текущий курс биткоина {cfg.SELL_PRICE} в рублях. 
-
-Минимальное количество {cfg.MIN_SUM_BTC} btc.
-Максимум {cfg.MAX_SUM_BTC} btc.
-
-💬 Введите количество BTC для обмена""")
-            bot.register_next_step_handler(call.message, exchangeCryptoStady, "BTC", "BUY", False)
-
-        if call.data == ('buyBTC_RUB'):
-            bot.send_message(call.message.chat.id, reply_markup=cancelKeyboard, text=f"""Текущий курс биткоина {cfg.SELL_PRICE} в рублях. 
-
-Минимальное количество {cfg.MIN_SUM_RUB} рублей.
-Максимум {cfg.MAX_SUM_RUB} рублей.
-
-💬 Введите количество рублей для обмена""")
-            bot.register_next_step_handler(call.message, exchangeCryptoStady, "RUB", "BUY", False)
-
-        if call.data == ('sellBTC_BTC'):
-            bot.send_message(call.message.chat.id, reply_markup=cancelKeyboard, text=f"""Текущий курс биткоина {cfg.SELL_PRICE} в рублях. 
-
-Минимальное количество {cfg.MIN_SUM_BTC} btc.
-Максимум {cfg.MAX_SUM_BTC} btc.
-
-💬 Введите количество BTC для обмена""")
-            bot.register_next_step_handler(call.message, exchangeCryptoStady, "BTC", "SELL", False)
-
-        if call.data == ('sellBTC_RUB'):
-            bot.send_message(call.message.chat.id, reply_markup=cancelKeyboard, text=f"""Текущий курс биткоина {cfg.SELL_PRICE} в рублях. 
-
-Минимальное количество {cfg.MIN_SUM_RUB} рублей.
-Максимум {cfg.MAX_SUM_RUB} рублей.
-
-💬 Введите количество рублей для обмена""")
-            bot.register_next_step_handler(call.message, exchangeCryptoStady, "RUB", "SELL", False)
 
 if __name__ == '__main__':
     bot.infinity_polling()

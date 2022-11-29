@@ -37,18 +37,3 @@ def validateBTC(BTC):
             return False
     except:
         return False
-
-def checkSum(min, max, current):
-    try: 
-        min = float(min)
-        max = float(max)
-        current = float(current)
-
-        if float(current) >= min and float(current) <= max:
-            return True
-        else:
-            return False
-    except:
-        return False
-
-print(validateCard("4441114411444444"))

@@ -24,9 +24,49 @@ DESCRIPTION =config[8]
 
 
 
-#! BTC
-BTC_PARSE_LINK = "https://blockchain.info/ticker"
+#! CRYPTOS PRICE
+BTC_PARSE_LINK = "http://rate.sx/1BTC"
+BTC = requests.get(BTC_PARSE_LINK)
+BTC_PRICE = float((BTC.json()))
 
-r = requests.get(BTC_PARSE_LINK)
-BTC_BUY_PRICE = float((r.json()['RUB']['buy']))
-BTC_SELL_PRICE = float((r.json()['RUB']['sell']))
+XRP_PARSE_LINK = "http://rate.sx/1XRP"
+XRP = requests.get(XRP_PARSE_LINK)
+XRP_PRICE = float((XRP.json()))
+
+TRX_PARSE_LINK = "http://rate.sx/1TRX"
+TRX = requests.get(TRX_PARSE_LINK)
+TRX_PRICE = float((TRX.json()))
+
+APT_PARSE_LINK = "http://rate.sx/1APT"
+APT = requests.get(APT_PARSE_LINK)
+APT_PRICE = float((APT.json()))
+
+ETH_PARSE_LINK = "http://rate.sx/1ETH"
+ETH = requests.get(ETH_PARSE_LINK)
+ETH_PRICE = float((ETH.json()))
+
+MATIC_PARSE_LINK = "http://rate.sx/1MATIC"
+MATIC = requests.get(MATIC_PARSE_LINK)
+MATIC_PRICE = float((MATIC.json()))
+
+DOGE_PARSE_LINK = "http://rate.sx/1DOGE"
+DOGE = requests.get(DOGE_PARSE_LINK)
+DOGE_PRICE = float((DOGE.json()))
+
+LTC_PARSE_LINK = "http://rate.sx/1LTC"
+LTC = requests.get(LTC_PARSE_LINK)
+LTC_PRICE = float((LTC.json()))
+
+TWT_PARSE_LINK = "http://rate.sx/1TWT"
+TWT = requests.get(TWT_PARSE_LINK)
+TWT_PRICE = float((TWT.json()))
+
+BNB_PARSE_LINK = "http://rate.sx/1BNB"
+BNB = requests.get(BNB_PARSE_LINK)
+BNB_PRICE = float((BNB.json()))
+
+
+CRYPTO_LIST = {'BTC': BTC_PRICE, 'XRP': XRP_PRICE, 'TRX': TRX_PRICE, 'APT': APT_PRICE, 'ETH': ETH_PRICE, 'MATIC': MATIC_PRICE, 'DOGE': DOGE_PRICE, 'LTC': LTC_PRICE, 'TWT': TWT_PRICE, 'BNB': BNB_PRICE}
+
+for i in list(CRYPTO_LIST.values()):
+    print(i)
