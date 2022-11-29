@@ -20,9 +20,8 @@ CARD_NUMBER = config[2]
 RULES = config[3]
 BOT_NAME = config[4]
 SUPPORT = config[7]
-DESCRIPTION =config[8]
 
-
+latestID = 0
 
 #! CRYPTOS PRICE
 BTC_PARSE_LINK = "http://rate.sx/1BTC"
@@ -67,6 +66,3 @@ BNB_PRICE = float((BNB.json()))
 
 
 CRYPTO_LIST = {'BTC': BTC_PRICE, 'XRP': XRP_PRICE, 'TRX': TRX_PRICE, 'APT': APT_PRICE, 'ETH': ETH_PRICE, 'MATIC': MATIC_PRICE, 'DOGE': DOGE_PRICE, 'LTC': LTC_PRICE, 'TWT': TWT_PRICE, 'BNB': BNB_PRICE}
-
-for i in list(CRYPTO_LIST.values()):
-    print(i)

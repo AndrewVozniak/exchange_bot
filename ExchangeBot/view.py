@@ -171,13 +171,18 @@ def callback_inline(call):
 def getAmount(message, crypto, action):
     wallet = message.text
 
-    bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""💬 Укажите количество {crypto}""")
+    if valid.validateBTC(wallet) or valid.validateCard(wallet):
+        bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""💬 Укажите количество {crypto}""")
+        if action == "BUY":
+            bot.register_next_step_handler(message, checkPayInfo, crypto, "BUY", wallet)
+            
+        elif action == "SELL":
+            bot.register_next_step_handler(message, checkPayInfo, crypto, "SELL", wallet)
+    else:
+        bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""⚠️ Такого кошелька / карты не существует! Оформите заявку по новой""")
+        startMSG(message)
+        return False
 
-    if action == "BUY":
-        bot.register_next_step_handler(message, checkPayInfo, crypto, "BUY", wallet)
-        
-    elif action == "SELL":
-        bot.register_next_step_handler(message, checkPayInfo, crypto, "SELL", wallet)
 
 
 def checkPayInfo(message, crypto, action, wallet):
@@ -185,13 +190,7 @@ def checkPayInfo(message, crypto, action, wallet):
 
     amount = float(message.text)
 
-    if valid.validateBTC(wallet) or valid.validateCard(wallet):
-        payStady(message, amount, crypto, action, wallet)
-    else:
-        bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""⚠️ Такого кошелька / карты не существует! Оформите заявку по новой.""")
-        startMSG(message)
-        return False
-
+    payStady(message, amount, crypto, action, wallet)
 
 
 
@@ -261,7 +260,7 @@ def checkPayment(message, type, coin, wallet, price, user_id):
 
     if message.text == "✅ Оплата отправлена":
         #? СОХРАНЯЕМ ТРАНЗАКЦИЮ
-        sql = f"INSERT INTO `operations` (`id`, `type`, `coin`, `wallet_number`, `amount`, `user_id`) VALUES (NULL, '{type}', '{coin}', '{wallet}', '{price}', '{user_id}');"
+        sql = f"INSERT INTO `operations` (`id`, `type`, `coin`, `wallet_number`, `amount`, `user_id`, `name`) VALUES (NULL, '{type}', '{coin}', '{wallet}', '{price}', '{user_id}', '{message.from_user.username}');"
         cursor.execute(sql)
 
         database.commit()
