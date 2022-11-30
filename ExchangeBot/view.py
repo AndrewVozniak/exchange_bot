@@ -60,46 +60,23 @@ def checkCommand(message, start_msg):
 
         # добавляем выбор валюты
         cryptos = [types.InlineKeyboardButton(i, callback_data=f"coin-{i}") for i in cfg.CRYPTO_LIST.keys()]
-
         keyboard.add(*cryptos)
 
-        bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"⬇️ Выбрать валюту")
-
-        bot.send_message(message.chat.id, reply_markup=keyboard, text=f"""💰 Актуальные цены
-
-BTC -> {cfg.BTC_PRICE}
-XRP -> {cfg.XRP_PRICE}
-TRX -> {cfg.TRX_PRICE}
-APT -> {cfg.APT_PRICE}
-ETH -> {cfg.ETH_PRICE}
-MATIC -> {cfg.MATIC_PRICE}
-DOGE -> {cfg.DOGE_PRICE}
-LTC -> {cfg.LTC_PRICE}
-TWT -> {cfg.TWT_PRICE}
-BNB -> {cfg.BNB_PRICE}
-
-
-🔄 Курс обмена в USD 🔄
-""")
+        bot.send_message(message.chat.id, reply_markup=keyboard, text=f"⬇️ Выбрать валюту")
 
 
     elif message.text == "💰 Актуальные цены": 
         bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""💰 Актуальные цены
-
-BTC -> {cfg.BTC_PRICE}
-XRP -> {cfg.XRP_PRICE}
-TRX -> {cfg.TRX_PRICE}
-APT -> {cfg.APT_PRICE}
-ETH -> {cfg.ETH_PRICE}
-MATIC -> {cfg.MATIC_PRICE}
-DOGE -> {cfg.DOGE_PRICE}
-LTC -> {cfg.LTC_PRICE}
-TWT -> {cfg.TWT_PRICE}
-BNB -> {cfg.BNB_PRICE}
-
-
 🔄 Курс обмена в USD 🔄
 """)
+
+        for key, value in cfg.CRYPTO_LIST.items():
+            bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""*{key}:*
+{value} USD
+""", parse_mode="Markdown")
+
+
+
 
 
     elif message.text == "🔄 История операций":
