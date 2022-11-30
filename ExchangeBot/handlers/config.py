@@ -16,10 +16,9 @@ config = mycursor.fetchone()
 PROJECT_NAME = "murbot"
 BOT_TOKEN = config[0]
 BTC =  config[1]
-CARD_NUMBER = config[2]
-RULES = config[3]
-BOT_NAME = config[4]
-SUPPORT = config[7]
+RULES = config[2]
+BOT_NAME = config[3]
+SUPPORT = config[6]
 
 latestID = 0
 

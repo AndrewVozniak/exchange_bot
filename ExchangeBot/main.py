@@ -26,8 +26,8 @@ cancelKeyboard.row('Отмена')
 
 dotenv_file = dotenv.find_dotenv()
 dotenv.load_dotenv(dotenv_file)
-token = config[5]
-adminPassword = config[6]
+token = config[4]
+adminPassword = config[5]
 bot = telebot.TeleBot(token)
 
 
@@ -349,7 +349,7 @@ def purchaseScreen(call):
 `Тип:` {x[1]};
 `Монета:` {x[2]};
 `Средство вывода:` {x[3]};
-`Сумма:` {x[4]} USD;
+`Сумма:` {x[4]} USDT;
 `User ID:` {x[5]};
 `User Name:` {x[6]};
 """, parse_mode="Markdown")
@@ -369,31 +369,30 @@ def purchaseScreen(call):
             bot.send_message(call.message.chat.id, f"""*Текущая информация:*
 
 *Платежные системы*
-Номер карты - {config[2]}
 Номер BTC кошелька - {config[1]}
 """, parse_mode="Markdown") 
 
             bot.send_message(call.message.chat.id, f"""Текущая информация:
 
-Сапорт - {config[7]}
+Сапорт - {config[6]}
 
 --------------------------------
 
 Правила:
-{config[4]}
+{config[2]}
 """) 
 
 
             bot.send_message(call.message.chat.id, f"""Текущая информация:
 
 Системные
-Имя бота - {config[4]}
+Имя бота - {config[3]}
 
 Токен бота - {config[0]}  
 
-Токен админки - {config[5]}
+Токен админки - {config[4]}
 
-Пароль от админки - {config[6]}
+Пароль от админки - {config[5]}
 """) 
 
 

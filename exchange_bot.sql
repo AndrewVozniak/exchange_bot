@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: localhost
--- Час створення: Лис 30 2022 р., 10:36
+-- Час створення: Лис 30 2022 р., 21:51
 -- Версія сервера: 5.7.33
 -- Версія PHP: 7.4.19
 
@@ -77,7 +77,6 @@ INSERT INTO `coins` (`id`, `name`, `commission`, `parse_link`) VALUES
 CREATE TABLE `config` (
   `BOT_TOKEN` varchar(255) NOT NULL,
   `BTC` varchar(255) NOT NULL,
-  `CARD_NUMBER` varchar(255) NOT NULL,
   `RULES` text NOT NULL,
   `BOT_NAME` varchar(255) NOT NULL,
   `ADMIN_TOKEN` varchar(255) NOT NULL,
@@ -89,8 +88,8 @@ CREATE TABLE `config` (
 -- Дамп даних таблиці `config`
 --
 
-INSERT INTO `config` (`BOT_TOKEN`, `BTC`, `CARD_NUMBER`, `RULES`, `BOT_NAME`, `ADMIN_TOKEN`, `ADMIN_PASSWORD`, `SUPPORT`) VALUES
-('5824728463:AAGze_2G2n8AomZoFKLKJXgOy6CVdu1o_z4', 'bc1qfg9t7fwn0atn4yf9spca5502vk8dyhq8a9aqd8', '4441 1144 4444 1111', 'ПРАВИЛА ОБМЕНА', 'exchange_bot', '5978700331:AAFjlGketecP-Oh1Q4QN3fdTAjIdki_oaBM', 'ADMIN ', '@andre');
+INSERT INTO `config` (`BOT_TOKEN`, `BTC`, `RULES`, `BOT_NAME`, `ADMIN_TOKEN`, `ADMIN_PASSWORD`, `SUPPORT`) VALUES
+('5824728463:AAGze_2G2n8AomZoFKLKJXgOy6CVdu1o_z4', 'bc1qfg9t7fwn0atn4yf9spca5502vk8dyhq8a9aqd8', 'ПРАВИЛА ОБМЕНА', 'exchange_bot', '5473224995:AAH2Xu9UCdBi5SyMgMUJEySGolz2yZoIWQY', 'ADMIN ', '@andre');
 
 -- --------------------------------------------------------
 
@@ -136,6 +135,12 @@ ALTER TABLE `coins`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Індекси таблиці `config`
+--
+ALTER TABLE `config`
+  ADD UNIQUE KEY `BOT_TOKEN` (`BOT_TOKEN`);
+
+--
 -- Індекси таблиці `operations`
 --
 ALTER TABLE `operations`
@@ -155,7 +160,7 @@ ALTER TABLE `admins`
 -- AUTO_INCREMENT для таблиці `coins`
 --
 ALTER TABLE `coins`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT для таблиці `operations`

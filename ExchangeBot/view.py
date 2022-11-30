@@ -135,13 +135,13 @@ def callback_inline(call):
     if call.data.startswith('buy-'):
         crypto = call.data.partition('-')[2]
 
-        bot.send_message(call.message.chat.id, reply_markup=cancelKeyboard, text="💬 Введите номер своего крипто-кошелька:")
+        bot.send_message(call.message.chat.id, reply_markup=cancelKeyboard, text="💬 Введите номер крипто-кошелька:")
         bot.register_next_step_handler(call.message, getAmount, crypto, "BUY")
 
     if call.data.startswith('sell-'):
         crypto = call.data.partition('-')[2]
 
-        bot.send_message(call.message.chat.id, reply_markup=cancelKeyboard, text="💬 Введите номер своей карты:")
+        bot.send_message(call.message.chat.id, reply_markup=cancelKeyboard, text="💬 Введите номер крипто-кошелька:")
         bot.register_next_step_handler(call.message, getAmount, crypto, "SELL")
 
 
@@ -150,13 +150,10 @@ def getAmount(message, crypto, action):
 
     if valid.validateBTC(wallet) or valid.validateCard(wallet):
         bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""💬 Укажите количество {crypto}""")
-        if action == "BUY":
-            bot.register_next_step_handler(message, checkPayInfo, crypto, "BUY", wallet)
+        bot.register_next_step_handler(message, checkPayInfo, crypto, action, wallet)
             
-        elif action == "SELL":
-            bot.register_next_step_handler(message, checkPayInfo, crypto, "SELL", wallet)
     else:
-        bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""⚠️ Такого кошелька / карты не существует! Оформите заявку по новой""")
+        bot.send_message(message.chat.id, reply_markup=cancelKeyboard, text=f"""⚠️ Такого кошелька не существует! Оформите заявку по новой""")
         startMSG(message)
         return False
 
@@ -194,7 +191,7 @@ def payStady(message, amount, crypto, action, wallet):
 
         bot.send_message(message.chat.id, reply_markup=keyboard, text=f"""✅ Заявка {str(random.randrange(100, 40000)).zfill(6)} успешно создана!
 
-    💵 Сумма к получению: {paymentSum} USD
+    💵 Сумма к получению: {paymentSum} USDT
     🏦 Счёт зачисления:
     {wallet}
 
@@ -220,7 +217,7 @@ def payStady(message, amount, crypto, action, wallet):
     ⏺️ Статус заявки:  🟡 Ожидает оплаты
 
     🕓 Время на оплату:  30 минут
-    💵 Сумма к оплате: `{price}` USD
+    💵 Сумма к оплате: `{price}` USDT
     🏦 Реквизиты для оплаты: `{cfg.CARD_NUMBER}`""", parse_mode="Markdown")
 
     bot.register_next_step_handler(message, checkPayment, action, crypto, wallet, price, message.chat.id)
